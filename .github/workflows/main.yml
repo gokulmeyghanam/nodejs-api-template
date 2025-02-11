@@ -43,11 +43,11 @@ jobs:
           sudo systemctl restart docker
 
       - name: Log in to Nexus Docker Registry
-        run: echo "${{ secrets.NEXUS_PASSWORD }}" | docker login 65.2.141.37:8082 -u ${{ secrets.NEXUS_USERNAME }} --password-stdin
+        run: echo "${{ secrets.NEXUS_PASSWORD }}" | docker login 65.2.141.37:8081 -u ${{ secrets.NEXUS_USERNAME }} --password-stdin
 
       - name: Build Docker image
         run: |
-          IMAGE_NAME="65.2.141.37:8082/docker-hosted/node-app"
+          IMAGE_NAME="65.2.141.37:8081/docker-hosted/node-app"
           TAG="latest"
           docker build -t $IMAGE_NAME:$TAG .
 
