@@ -33,10 +33,10 @@ jobs:
 
       - name: Login to Nexus
         run: |
-          docker login -u ${{ secrets.NEXUS_USERNAME }} -p ${{ secrets.NEXUS_PASSWORD }} http://65.2.141.37:8081
+          docker login -u ${{ secrets.NEXUS_USERNAME }} -p ${{ secrets.NEXUS_PASSWORD }} http://65.2.141.37:8081/repository/docker-hosted/
 
       - name: Tag Docker image for Nexus
-        run: docker tag my-node-app:latest 65.2.141.37:8081/my-node-app:latest  # Replace with your Nexus repository path
+        run: docker tag my-node-app:latest 65.2.141.37:8081/repository/docker-hosted/my-node-app:latest  # Replace with your Nexus repository path
 
       - name: Push Docker image to Nexus
-        run: docker push 65.2.141.37:8081/my-node-app:latest
+        run: docker push 65.2.141.37:8081/repository/docker-hosted/my-node-app:latest
