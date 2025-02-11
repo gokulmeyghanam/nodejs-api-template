@@ -28,31 +28,15 @@ jobs:
       - name: Test
         run: npm test
 
-  docker:
-    runs-on: ubuntu-latest
-    needs: build # Runs after the build job
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Docker Daemon
-        run: |
-          sudo mkdir -p /etc/docker
-          echo '{ "insecure-registries": ["65.2.141.37:8081"] }' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
-
-      - name: Log in to Nexus Docker Registry
-        run: echo "${{ secrets.NEXUS_PASSWORD }}" | docker login 65.2.141.37:8081 -u ${{ secrets.NEXUS_USERNAME }} --password-stdin
-
       - name: Build Docker image
+        run: docker build -t my-node-app:latest .
+
+      - name: Login to Nexus
         run: |
-          IMAGE_NAME="65.2.141.37:8081/docker-hosted/node-app"
-          TAG="latest"
-          docker build -t $IMAGE_NAME:$TAG .
+          docker login -u ${{ secrets.NEXUS_USERNAME }} -p ${{ secrets.NEXUS_PASSWORD }} http://65.2.141.37:8081
+
+      - name: Tag Docker image for Nexus
+        run: docker tag my-node-app:latest 65.2.141.37:8081/my-node-app:latest  # Replace with your Nexus repository path
 
       - name: Push Docker image to Nexus
-        run: |
-          IMAGE_NAME="65.2.141.37:8081/docker-hosted/node-app"
-          TAG="latest"
-          docker push $IMAGE_NAME:$TAG
+        run: docker push 65.2.141.37:8081/my-node-app:latest
