@@ -1,42 +1,65 @@
-name: Node.js Pipeline
+name: Node.js CI/CD Pipeline
 
 on:
   push:
     branches:
-      - master
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-          cache: 'npm'
+          node-version: 18
+          registry-url: 'https://registry.npmjs.org/'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Dependencies
+        run: npm install
 
-      - name: Build
-        run: npm run build --if-present
-
-      - name: Test
+      - name: Run Tests
         run: npm test
 
-      - name: Build Docker image
-        run: docker build -t my-node-app:latest .
+      - name: Build Project
+        run: npm run build
 
-      - name: Login to Nexus
+      - name: Archive Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: node-app-build
+          path: dist/
+
+  publish:
+    name: Publish to Nexus
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Publish Artifact to Nexus
+        env:
+          NEXUS_USER: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
-          docker login -u ${{ secrets.NEXUS_USERNAME }} -p ${{ secrets.NEXUS_PASSWORD }} http://65.2.141.37:8081/repository/docker-hosted/
-
-      - name: Tag Docker image for Nexus
-        run: docker tag my-node-app:latest 65.2.141.37:8081/repository/docker-hosted/my-node-app:latest  # Replace with your Nexus repository path
-
-      - name: Push Docker image to Nexus
-        run: docker push 65.2.141.37:8081/repository/docker-hosted/my-node-app:latest
+          curl -v -u "$NEXUS_USER:$NEXUS_PASSWORD" \
+          --upload-file ./dist/app.tar.gz \
+          "http://13.232.148.167:8081/repository/npm-hosted/my-app.tar.gz"
