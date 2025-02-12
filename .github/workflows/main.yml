@@ -1,4 +1,4 @@
-name: Node.js Pipeline
+name: Node.js CI Pipeline
 
 on:
   push:
@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 20.x
           cache: 'npm'
@@ -28,15 +28,16 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nodejs-build
-          path: |
-            dist/
-            package.json
-            package-lock.json
-          retention-days: 5
+      - name: Package Node.js App for Nexus
+        run: |
+          mkdir -p release
+          tar -czvf release/node-app.tar.gz dist package.json package-lock.json
+
+      - name: Upload Node.js Artifact to Nexus (`npm-repo`)
+        run: |
+          curl -u "admin:Gokul@866819" \
+            --upload-file release/node-app.tar.gz \
+            "http://15.206.70.92:8081/repository/npm-repo/node-app.tar.gz"
 
   docker:
     runs-on: ubuntu-latest
@@ -44,19 +45,28 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: nodejs-build
           path: .
 
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        run: echo "Gokul@8668" | docker login -u "gokulmeyghanam" --password-stdin
 
       - name: Build Docker Image
         run: docker build -t gokulmeyghanam/nodejs-app:latest .
 
       - name: Push Docker Image to Docker Hub
         run: docker push gokulmeyghanam/nodejs-app:latest
+
+      - name: Tag Docker Image for Nexus (`docker-repo`)
+        run: docker tag gokulmeyghanam/nodejs-app:latest 15.206.70.92:8082/docker-repo/nodejs-app:latest
+
+      - name: Log in to Nexus Docker Repo
+        run: echo "Gokul@866819" | docker login -u "admin" --password-stdin 15.206.70.92:8082
+
+      - name: Push Docker Image to Nexus (`docker-repo`)
+        run: docker push 15.206.70.92:8082/docker-repo/nodejs-app:latest
