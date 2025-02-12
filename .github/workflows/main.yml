@@ -1,64 +1,27 @@
-name: Node.js CI/CD Pipeline
+name: Build
 
 on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
+
 
 jobs:
   build:
+    name: Build and analyze
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
         with:
-          node-version: 20.x
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build --if-present
-
-      - name: Test
-        run: npm test
-
-      - name: Archive Build Artifacts
-        uses: actions/upload-artifact@v4  # ✅ Updated to v4
-        with:
-          name: node-app-build
-          path: dist/
-
-  publish:
-    name: Publish to Nexus
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Build Project
-        run: npm run build
-
-      - name: Publish Artifact to Nexus
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: SonarSource/sonarqube-scan-action@v4
         env:
-          NEXUS_USER: ${{ secrets.NEXUS_USER }}
-          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
-        run: |
-          curl -v -u "$NEXUS_USER:$NEXUS_PASSWORD" \
-          --upload-file ./dist/app.tar.gz \
-          "http://13.232.148.167:8081/repository/npm-hosted/my-app.tar.gz"
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # - uses: SonarSource/sonarqube-quality-gate-action@v1
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
