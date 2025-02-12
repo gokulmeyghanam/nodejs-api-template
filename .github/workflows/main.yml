@@ -28,6 +28,15 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nodejs-build
+          path: |
+            dist/
+            package.json
+            package-lock.json
+          retention-days: 5
 
   docker:
     runs-on: ubuntu-latest
