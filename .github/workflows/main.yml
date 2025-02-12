@@ -28,15 +28,12 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Run SonarQube Analysis
-        env:
-          SONAR_HOST_UR: "http://13.234.111.118:9000/"
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          npm install -g sonarqube-scanner
-          sonar-scanner \
-            -Dsonar.projectKey=nodejs-github-actions \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=$SONAR_HOST_UR \
-            -Dsonar.login=$SONAR_TOKEN
-
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nodejs-build
+          path: |
+            dist/
+            package.json
+            package-lock.json
+          retention-days: 5
